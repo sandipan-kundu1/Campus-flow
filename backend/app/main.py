@@ -9,7 +9,9 @@ app = FastAPI(title="Campus Flow API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://main.d19691dovsr02k.amplifyapp.com","http://localhost:5173"],
+    allow_origins=["https://main.d19691dovsr02k.amplifyapp.com",
+                   "http://localhost:5173",
+                   "http://13.200.19.188:8000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
