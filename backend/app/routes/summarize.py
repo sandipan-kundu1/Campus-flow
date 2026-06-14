@@ -51,5 +51,7 @@ def get_study_suggestions(req: StudySuggestionsRequest, student_id: str = Depend
         settings.dynamodb_schedules_table,
         filter_expression=Attr("student_id").eq(student_id),
     )
-    suggestions = generate_study_suggestions(deadlines, schedule)
+    from datetime import datetime
+    current_dt = datetime.now().strftime("%A, %d %B %Y %I:%M %p")
+    suggestions = generate_study_suggestions(deadlines, schedule, current_dt)
     return {"suggestions": suggestions}

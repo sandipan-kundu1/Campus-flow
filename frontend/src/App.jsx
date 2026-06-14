@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
+import Calendar from "./pages/Calendar";
 import Timetable from "./pages/Timetable";
 import Documents from "./pages/Documents";
 import Deadlines from "./pages/Deadlines";
@@ -24,6 +25,7 @@ export default function App() {
                   <Layout>
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
+                      <Route path="/calendar" element={<Calendar />} />
                       <Route path="/timetable" element={<Timetable />} />
                       <Route path="/documents" element={<Documents />} />
                       <Route path="/deadlines" element={<Deadlines />} />

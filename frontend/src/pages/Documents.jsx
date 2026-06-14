@@ -6,6 +6,32 @@ import ReactMarkdown from "react-markdown";
 
 const ACCEPT = ".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.png,.jpg,.jpeg,.json,.txt";
 
+const getMealTimingFromSummary = (summary, mealName, defaultTiming) => {
+  if (!summary) return defaultTiming;
+  const lines = summary.split("\n");
+  for (const line of lines) {
+    if (new RegExp("\\b" + mealName + "\\b", "i").test(line)) {
+      const timePat = "\\b\\d{1,2}(?::\\d{2})?\\s*(?:AM|PM|am|pm)?\\b";
+      const rangeRegex = new RegExp("(" + timePat + ")\\s*[-–to]+\\s*(" + timePat + ")", "i");
+      const rangeMatch = line.match(rangeRegex);
+      if (rangeMatch) {
+        let startStr = rangeMatch[1].trim();
+        let endStr = rangeMatch[2].trim();
+        if (/am/i.test(endStr) && !/am|pm/i.test(startStr)) startStr += " AM";
+        if (/pm/i.test(endStr) && !/am|pm/i.test(startStr)) startStr += " PM";
+        return `${startStr} - ${endStr}`;
+      }
+      
+      const singleRegex = new RegExp("(" + timePat + ")", "i");
+      const singleMatch = line.match(singleRegex);
+      if (singleMatch) {
+        return singleMatch[1].trim();
+      }
+    }
+  }
+  return defaultTiming;
+};
+
 export default function Documents() {
   const [summaries, setSummaries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -188,6 +214,14 @@ export default function Documents() {
                         <Trash2 size={15} />
                       </button>
                     </div>
+
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-xs bg-green-950/40 border border-green-900/30 px-3 py-2 rounded-lg text-green-300">
+                      <span className="font-semibold text-white">Meal Timings:</span>
+                      <span>🍳 Breakfast: {getMealTimingFromSummary(s.summary, "Breakfast", "08:00 AM - 09:30 AM")}</span>
+                      <span>🍛 Lunch: {getMealTimingFromSummary(s.summary, "Lunch", "01:00 PM - 02:30 PM")}</span>
+                      <span>🍽️ Dinner: {getMealTimingFromSummary(s.summary, "Dinner", "12:07 AM")}</span>
+                    </div>
+
                     <div className="text-sm text-gray-200 border-t border-green-900/40 pt-3">
                       <div className="space-y-3">
                         <ReactMarkdown

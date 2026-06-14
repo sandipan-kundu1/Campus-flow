@@ -1,9 +1,11 @@
+import uuid
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from boto3.dynamodb.conditions import Attr
 from app.services import dynamodb_service
 from app.config import settings
 from app.utils.auth import get_current_user
+from app.schemas.schemas import ScheduleCreate, ScheduleUpdate
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
 
@@ -157,3 +159,70 @@ def clear_timetable(student_id: str = Depends(get_current_user)):
     except Exception:
         pass
     return {"message": f"Cleared {len(entries)} schedule entries"}
+
+
+@router.get("")
+def get_all_schedules(student_id: str = Depends(get_current_user)):
+    entries = _get_all_schedule(student_id)
+    return {"schedule": entries}
+
+
+@router.post("")
+def create_schedule(entry: ScheduleCreate, student_id: str = Depends(get_current_user)):
+    item = {
+        "id": str(uuid.uuid4()),
+        "student_id": student_id,
+        "subject": entry.subject,
+        "day": entry.day,
+        "time": entry.time,
+        "end_time": entry.end_time or "",
+        "room": entry.room or "",
+        "instructor": entry.instructor or "",
+        "is_one_time": entry.is_one_time,
+        "date": entry.date or "",
+        "description": entry.description or "",
+        "type": entry.type or "class",
+    }
+    dynamodb_service.put_item(settings.dynamodb_schedules_table, item)
+    return item
+
+
+@router.put("/{schedule_id}")
+def update_schedule(schedule_id: str, update: ScheduleUpdate, student_id: str = Depends(get_current_user)):
+    existing = dynamodb_service.get_item(settings.dynamodb_schedules_table, {"id": schedule_id})
+    if not existing or existing.get("student_id") != student_id:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this schedule entry")
+        
+    updates = {k: v for k, v in update.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+        
+    set_parts = []
+    expr_values = {}
+    expr_names = {}
+    for field, value in updates.items():
+        safe_key = f"#f_{field}"
+        val_key = f":v_{field}"
+        set_parts.append(f"{safe_key} = {val_key}")
+        expr_names[safe_key] = field
+        expr_values[val_key] = value
+        
+    update_expr = "SET " + ", ".join(set_parts)
+    updated = dynamodb_service.update_item(
+        settings.dynamodb_schedules_table,
+        {"id": schedule_id},
+        update_expr,
+        expr_values,
+        expr_names,
+    )
+    return updated
+
+
+@router.delete("/{schedule_id}")
+def delete_schedule(schedule_id: str, student_id: str = Depends(get_current_user)):
+    existing = dynamodb_service.get_item(settings.dynamodb_schedules_table, {"id": schedule_id})
+    if not existing or existing.get("student_id") != student_id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this schedule entry")
+        
+    dynamodb_service.delete_item(settings.dynamodb_schedules_table, {"id": schedule_id})
+    return {"message": "Schedule entry deleted"}

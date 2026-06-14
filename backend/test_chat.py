@@ -12,10 +12,16 @@ try:
 except Exception:
     traceback.print_exc()
 
+def chat_query_mock(query: ChatQuery, student_id: str):
+    schedule_context = _build_schedule_context(student_id, query.current_datetime)
+    from app.routes.chat import _build_deadlines_context
+    deadlines_context = _build_deadlines_context(student_id)
+    return deadlines_context
+
 print("\n=== Testing chat_query ===")
 try:
     q = ChatQuery(question="what classes do I have today", student_id="default_student", current_datetime="")
-    result = chat_query(q)
+    result = chat_query_mock(q, "default_student")
     print("OK:", result)
 except Exception:
     traceback.print_exc()

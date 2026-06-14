@@ -14,6 +14,32 @@ class ScheduleEntry(BaseModel):
     instructor: Optional[str] = None
 
 
+class ScheduleCreate(BaseModel):
+    subject: str
+    day: str
+    time: str
+    end_time: Optional[str] = None
+    room: Optional[str] = None
+    instructor: Optional[str] = None
+    is_one_time: bool = False
+    date: Optional[str] = None
+    description: Optional[str] = None
+    type: Optional[str] = "class"
+
+
+class ScheduleUpdate(BaseModel):
+    subject: Optional[str] = None
+    day: Optional[str] = None
+    time: Optional[str] = None
+    end_time: Optional[str] = None
+    room: Optional[str] = None
+    instructor: Optional[str] = None
+    is_one_time: Optional[bool] = None
+    date: Optional[str] = None
+    description: Optional[str] = None
+    type: Optional[str] = None
+
+
 class TimetableUploadResponse(BaseModel):
     message: str
     entries_stored: int

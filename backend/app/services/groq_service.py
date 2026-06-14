@@ -76,7 +76,7 @@ def generate_study_suggestions(deadlines: list[dict], schedule: list[dict]) -> s
     ]
     return chat_completion(messages, temperature=0.5, max_tokens=800)
 
-def answer_question(question: str, context: str, current_datetime: str = "", schedule_context: str = "") -> str:
+def answer_question(question: str, context: str, current_datetime: str = "", schedule_context: str = "", student_id: str = "default_student", deadlines_context: str = "") -> str:
     from datetime import datetime
     dt = current_datetime or datetime.now().strftime("%A, %d %B %Y %I:%M %p")
     messages = [
@@ -90,6 +90,7 @@ def answer_question(question: str, context: str, current_datetime: str = "", sch
                 "- Calculate the exact calendar date from today's date when referring to upcoming days.\n"
                 "- Always include the class time, subject name, and room number if available.\n"
                 "- Never say just 'Monday' — always say 'Monday, 14 July 2025'.\n"
+                "- When asked about deadlines, look at the provided 'Deadlines Data'. List and summarize them clearly.\n"
                 "Answer all questions using the provided context. "
                 "If the context doesn't have the answer, say so honestly."
             ),
@@ -98,6 +99,8 @@ def answer_question(question: str, context: str, current_datetime: str = "", sch
             "role": "user",
             "content": (
                 f"Live Schedule Data:\n{schedule_context}\n\n" if schedule_context else ""
+            ) + (
+                f"Deadlines Data:\n{deadlines_context}\n\n" if deadlines_context else ""
             ) + f"Document Context:\n{context}\n\nQuestion: {question}",
         },
     ]

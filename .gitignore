@@ -50,3 +50,6 @@ htmlcov/
 # OS/editor swap files
 *.swp
 *.swo
+
+# Local debug helpers
+backend/check_url.py

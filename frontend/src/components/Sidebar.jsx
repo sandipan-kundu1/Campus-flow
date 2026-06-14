@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarDays,
+  Calendar,
   FileText,
   ClipboardList,
   MessageSquare,
@@ -12,6 +13,7 @@ import { useAuth } from "../context/AuthContext";
 
 const links = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/calendar", label: "Calendar", icon: Calendar },
   { to: "/timetable", label: "Timetable", icon: CalendarDays },
   { to: "/documents", label: "Documents", icon: FileText },
   { to: "/deadlines", label: "Deadlines", icon: ClipboardList },

@@ -49,18 +49,37 @@ def _gemini_vision(file_bytes: bytes, filename: str, prompt: str, max_tokens: in
     """Send an image to Gemini vision model with a given prompt."""
     import google.generativeai as genai
     from app.config import settings
+    from app.services.gemini_service import get_api_keys
+    import app.services.gemini_service as gs
 
-    genai.configure(api_key=settings.gemini_api_key)
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    
+    keys = get_api_keys()
+    if not keys:
+        raise ValueError("No Gemini API keys configured.")
+        
     img = Image.open(io.BytesIO(file_bytes))
     
-    generation_config = genai.types.GenerationConfig(
-        max_output_tokens=max_tokens,
-    )
-    
-    response = model.generate_content([prompt, img], generation_config=generation_config)
-    return response.text
+    last_exception = None
+    for _ in range(len(keys)):
+        if gs.active_key_index >= len(keys):
+            gs.active_key_index = 0
+            
+        current_key = keys[gs.active_key_index]
+        genai.configure(api_key=current_key)
+        
+        try:
+            model = genai.GenerativeModel("gemini-2.5-flash")
+            generation_config = genai.types.GenerationConfig(
+                max_output_tokens=max_tokens,
+            )
+            response = model.generate_content([prompt, img], generation_config=generation_config)
+            return response.text
+        except Exception as e:
+            last_exception = e
+            print(f"Gemini Vision API Error with key index {gs.active_key_index}: {e}")
+            gs.active_key_index = (gs.active_key_index + 1) % len(keys)
+            print(f"Rotating to Gemini API key index {gs.active_key_index}...")
+            
+    raise last_exception
 
 
 def extract_text_from_image(file_bytes: bytes, filename: str) -> str:

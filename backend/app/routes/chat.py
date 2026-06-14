@@ -135,6 +135,28 @@ def _build_schedule_context(student_id: str, current_datetime: str) -> str:
     return "\n".join(lines)
 
 
+def _build_deadlines_context(student_id: str) -> str:
+    """Build a rich text block of active deadlines for the AI to reason over."""
+    deadlines = dynamodb_service.scan_items(
+        settings.dynamodb_deadlines_table,
+        filter_expression=Attr("student_id").eq(student_id) & Attr("completed").eq(False),
+    )
+    # Sort by due_date ascending
+    deadlines.sort(key=lambda x: x.get("due_date", ""))
+
+    lines = ["UPCOMING DEADLINES:"]
+    if not deadlines:
+        lines.append("  No upcoming deadlines scheduled.")
+    else:
+        for d in deadlines:
+            lines.append(
+                f"  - ID: {d.get('id')} | Title: {d.get('title')} | Type: {d.get('type','')} | "
+                f"Subject: {d.get('subject','N/A')} | Due Date: {d.get('due_date')} | "
+                f"Priority: {d.get('priority','medium')} | Description: {d.get('description','')}"
+            )
+    return "\n".join(lines)
+
+
 @router.post("/documents/upload")
 async def upload_document(
     file: UploadFile = File(...),
@@ -173,11 +195,21 @@ def chat_query(query: ChatQuery, student_id: str = Depends(get_current_user)):
     # Live schedule context with exact calendar dates
     schedule_context = _build_schedule_context(student_id, query.current_datetime)
 
+    # Live deadlines context
+    deadlines_context = _build_deadlines_context(student_id)
+
     # RAG context from uploaded documents
     docs = rag_service.query_documents(query.question, n_results=4, where={"student_id": student_id})
     context = "\n\n".join([d["text"] for d in docs]) if docs else "No additional documents found."
 
-    answer = answer_question(query.question, context, query.current_datetime, schedule_context, student_id)
+    answer = answer_question(
+        question=query.question,
+        context=context,
+        current_datetime=query.current_datetime,
+        schedule_context=schedule_context,
+        student_id=student_id,
+        deadlines_context=deadlines_context
+    )
 
     sources = [
         {

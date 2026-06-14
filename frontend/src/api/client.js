@@ -14,6 +14,11 @@ export const getNextClass = (studentId = "default_student") =>
   api.get(`/schedule/next-class?student_id=${studentId}`);
 export const getUpcomingEvents = (studentId = "default_student") =>
   api.get(`/schedule/upcoming?student_id=${studentId}`);
+export const getSchedule = (studentId = "default_student") =>
+  api.get(`/schedule?student_id=${studentId}`);
+export const createSchedule = (data) => api.post("/schedule", data);
+export const updateSchedule = (id, data) => api.put(`/schedule/${id}`, data);
+export const deleteSchedule = (id) => api.delete(`/schedule/${id}`);
 
 export const clearTimetable = (studentId = "default_student") =>
   api.delete(`/schedule/clear?student_id=${studentId}`, { timeout: 60000 });
