@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const isDev = import.meta.env.DEV;
+const apiBaseURL = import.meta.env.VITE_API_URL || (isDev ? "http://localhost:8000" : "");
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  baseURL: apiBaseURL,
   timeout: 1500000,
 });
 

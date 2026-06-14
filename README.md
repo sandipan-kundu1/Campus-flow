@@ -150,6 +150,8 @@ npm run dev
 # App runs at http://localhost:5173
 ```
 
+For production deployments, set `VITE_API_URL` to your public backend URL or proxy path. The deployed frontend will fail with `Network Error` if it is left pointing at `localhost`.
+
 ---
 
 ### 3. AWS Setup
