@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getDeadlines, createDeadline, updateDeadline,
-  deleteDeadline, getStudySuggestions,
+  deleteDeadline,
 } from "../api/client";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
-import { Plus, Trash2, CheckCircle, Circle, Sparkles, X } from "lucide-react";
+import { Plus, Trash2, CheckCircle, Circle, X } from "lucide-react";
 
 const TYPES = ["assignment", "project", "exam", "submission"];
 const PRIORITIES = ["low", "medium", "high"];
+
+const PRIORITY_WEIGHT = { low: 1, medium: 2, high: 3 };
+const TYPE_BASE_BLOCKS = { assignment: 3, project: 5, exam: 6, submission: 2 };
 
 const emptyForm = {
   title: "", type: "assignment", subject: "",
@@ -20,8 +23,6 @@ export default function Deadlines() {
   const [deadlines, setDeadlines] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
-  const [suggestions, setSuggestions] = useState("");
-  const [loadingSugg, setLoadingSugg] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchDeadlines = () => {
@@ -50,21 +51,70 @@ export default function Deadlines() {
     fetchDeadlines();
   };
 
-  const handleSuggestions = async () => {
-    setLoadingSugg(true);
-    setSuggestions("");
-    try {
-      const res = await getStudySuggestions();
-      setSuggestions(res.data.suggestions);
-    } finally {
-      setLoadingSugg(false);
-    }
-  };
-
   const daysUntil = (dateStr) => {
     const diff = Math.ceil((new Date(dateStr) - new Date()) / 86400000);
     return diff;
   };
+
+  const urgencyScore = (days) => {
+    if (days < 0) return 12;
+    if (days === 0) return 10;
+    if (days <= 2) return 9;
+    if (days <= 7) return 7;
+    if (days <= 14) return 4;
+    return 1;
+  };
+
+  const typeScore = (type) => {
+    if (type === "exam") return 3;
+    if (type === "project") return 2;
+    return 1;
+  };
+
+  const getTaskScore = (deadline) => {
+    const days = daysUntil(deadline.due_date);
+    const priority = PRIORITY_WEIGHT[deadline.priority] || 2;
+    return priority * 4 + urgencyScore(days) + typeScore(deadline.type);
+  };
+
+  const getRecommendedBlocks = (deadline) => {
+    const days = daysUntil(deadline.due_date);
+    const base = TYPE_BASE_BLOCKS[deadline.type] || 3;
+    const priorityBonus = deadline.priority === "high" ? 2 : deadline.priority === "medium" ? 1 : 0;
+    const urgencyBonus = days <= 2 ? 2 : days <= 7 ? 1 : 0;
+    return Math.max(1, base + priorityBonus + urgencyBonus);
+  };
+
+  const activeDeadlines = useMemo(() => {
+    return deadlines
+      .filter((d) => !d.completed)
+      .map((d) => {
+        const days = daysUntil(d.due_date);
+        const totalBlocks = getRecommendedBlocks(d);
+        const availableDays = days <= 0 ? 1 : days;
+        return {
+          ...d,
+          days,
+          score: getTaskScore(d),
+          totalBlocks,
+          dailyBlocks: Math.max(1, Math.ceil(totalBlocks / availableDays)),
+        };
+      })
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.days - b.days;
+      });
+  }, [deadlines]);
+
+  const todaysFocus = useMemo(() => activeDeadlines.slice(0, 3), [activeDeadlines]);
+
+  const weeklyBuckets = useMemo(() => {
+    return {
+      critical: activeDeadlines.filter((d) => d.days <= 2),
+      thisWeek: activeDeadlines.filter((d) => d.days > 2 && d.days <= 7),
+      later: activeDeadlines.filter((d) => d.days > 7),
+    };
+  }, [activeDeadlines]);
 
   const urgencyColor = (d) => {
     if (d.completed) return "opacity-50";
@@ -82,22 +132,12 @@ export default function Deadlines() {
           <h1 className="text-2xl font-bold text-white">Deadlines</h1>
           <p className="text-gray-400 text-sm mt-1">Assignments, exams, and submission dates</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleSuggestions}
-            disabled={loadingSugg}
-            className="flex items-center gap-2 bg-accent-500 hover:bg-accent-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Sparkles size={15} />
-            {loadingSugg ? "Generating…" : "Study Plan"}
-          </button>
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Plus size={16} /> Add Deadline
-          </button>
-        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        >
+          <Plus size={16} /> Add Deadline
+        </button>
       </div>
 
       {/* Add Form Modal */}
@@ -168,13 +208,80 @@ export default function Deadlines() {
       )}
 
       {/* Study Suggestions */}
-      {suggestions && (
-        <Card className="border-accent-500/30 bg-accent-500/5">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={16} className="text-accent-500" />
-            <p className="font-semibold text-white text-sm">AI Study Plan</p>
+      {activeDeadlines.length > 0 && (
+        <Card className="border-primary-500/30 bg-primary-500/5">
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div>
+              <p className="font-semibold text-white text-sm">Priority Study Plan</p>
+              <p className="text-xs text-gray-400 mt-1">Auto-ranked by due date, priority, and task type</p>
+            </div>
+            <Badge label={`${activeDeadlines.length} active`} variant="assignment" />
           </div>
-          <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{suggestions}</p>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-gray-900/70 border border-gray-800 rounded-lg p-3">
+              <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Today Focus (Next 24h)</p>
+              <div className="space-y-2">
+                {todaysFocus.map((d) => (
+                  <div key={d.id} className="border border-gray-800 rounded-md p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-white truncate">{d.title}</p>
+                      <span className="text-xs text-primary-400">P{d.score}</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {d.days < 0 ? `${Math.abs(d.days)} day(s) overdue` : d.days === 0 ? "Due today" : `${d.days} day(s) left`} •
+                      {` ${d.dailyBlocks} block(s) today (${d.totalBlocks} total)`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-gray-900/70 border border-gray-800 rounded-lg p-3">
+              <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Weekly Load Split</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between text-gray-300">
+                  <span>Critical (0-2 days)</span>
+                  <span className="text-red-400 font-medium">{weeklyBuckets.critical.length}</span>
+                </div>
+                <div className="flex items-center justify-between text-gray-300">
+                  <span>Upcoming (3-7 days)</span>
+                  <span className="text-yellow-400 font-medium">{weeklyBuckets.thisWeek.length}</span>
+                </div>
+                <div className="flex items-center justify-between text-gray-300">
+                  <span>Later (8+ days)</span>
+                  <span className="text-green-400 font-medium">{weeklyBuckets.later.length}</span>
+                </div>
+                <div className="pt-2 mt-2 border-t border-gray-800 text-xs text-gray-400 leading-relaxed">
+                  Rule: finish all critical tasks first, then allocate 70% effort to this-week tasks and 30% to later tasks.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Priority Queue</p>
+            <div className="space-y-2 max-h-72 overflow-auto pr-1">
+              {activeDeadlines.map((d, index) => (
+                <div key={d.id} className="bg-gray-900/70 border border-gray-800 rounded-md px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-gray-500 w-5">#{index + 1}</span>
+                      <p className="text-sm text-white truncate">{d.title}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge label={d.priority} variant={d.priority} />
+                      <span className="text-xs text-primary-400">P{d.score}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {d.days < 0 ? `${Math.abs(d.days)} day(s) overdue` : d.days === 0 ? "Due today" : `${d.days} day(s) left`} •
+                    {` Plan ${d.dailyBlocks} x 50-min block(s) per day`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </Card>
       )}
 

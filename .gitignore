@@ -28,3 +28,25 @@ backend/chroma_db/
 # Keys and credentials
 *.pem
 deploy/*.pem
+
+# Logs and runtime artifacts
+*.log
+logs/
+
+# Python local tooling artifacts
+.coverage
+coverage.xml
+htmlcov/
+.ruff_cache/
+.pyre/
+
+# Local databases and temp files
+*.db
+*.sqlite
+*.sqlite3
+*.tmp
+*.temp
+
+# OS/editor swap files
+*.swp
+*.swo
