@@ -24,3 +24,7 @@ backend/chroma_db/
 
 .idea/
 .vscode/
+
+# Keys and credentials
+*.pem
+deploy/*.pem

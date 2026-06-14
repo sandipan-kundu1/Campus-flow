@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { getAlerts, markAlertAsRead, markAllAlertsAsRead, generateDemoAlert, generateAlerts } from "../api/client";
 import { toast } from "react-toastify";
+import { useAuth } from "./AuthContext";
 
 const NotificationContext = createContext();
 
 export function NotificationProvider({ children }) {
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const knownIds = useRef(new Set());
@@ -20,8 +22,9 @@ export function NotificationProvider({ children }) {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     requestPermission();
-  }, []);
+  }, [isAuthenticated]);
 
   // Show native desktop notification
   const triggerBrowserNotification = (title, message) => {
@@ -95,10 +98,18 @@ export function NotificationProvider({ children }) {
 
   // Poll notifications every 60 seconds
   useEffect(() => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      setUnreadCount(0);
+      knownIds.current.clear();
+      isInitialLoad.current = true;
+      return;
+    }
+
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isAuthenticated]);
 
   // Mark a single notification as read
   const markAsRead = async (id) => {
