@@ -4,15 +4,18 @@ import { useNotifications } from "../context/NotificationContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Sparkles } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 export default function Layout({ children }) {
   const { triggerDemo } = useNotifications();
+  const location = useLocation();
+  const isChat = location.pathname === "/chat";
 
   return (
     <div className="flex h-screen bg-gray-950 overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 h-full">
-        <header className="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-30">
+        <header className="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-30 shrink-0">
           <div className="text-gray-400 text-xs font-medium uppercase tracking-wider hidden sm:block">
             Dashboard Panel
           </div>
@@ -28,7 +31,9 @@ export default function Layout({ children }) {
             <NotificationBell />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className={`flex-1 p-6 flex flex-col min-h-0 ${isChat ? "overflow-hidden" : "overflow-y-auto"}`}>
+          {children}
+        </main>
       </div>
       <ToastContainer limit={5} />
     </div>

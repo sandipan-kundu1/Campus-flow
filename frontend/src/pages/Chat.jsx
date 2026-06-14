@@ -50,10 +50,21 @@ export default function Chat() {
         },
       ]);
     } catch (err) {
+      const status = err?.response?.status;
       const detail = err?.response?.data?.detail || err?.message || "unknown error";
+      const isQuota = status === 429 || detail.toLowerCase().includes("quota") || detail.toLowerCase().includes("rate limit") || detail.toLowerCase().includes("429");
+      const isServer = status >= 500 || (!status && detail.toLowerCase().includes("network"));
+      let friendly;
+      if (isQuota) {
+        friendly = "⚠️ **Gemini API quota exceeded.** All API keys have hit the free-tier daily limit (20 req/day). Please wait until tomorrow or add a new API key in the backend `.env` file.";
+      } else if (isServer) {
+        friendly = `🔴 **Backend error (${status || 500}):** ${detail}\n\nCheck the backend terminal for the traceback and restart if needed.`;
+      } else {
+        friendly = `Error: ${detail}\n\nPlease check your connection and try again.`;
+      }
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `Error: ${detail}\n\nPlease restart the backend server and try again.` },
+        { role: "assistant", content: friendly },
       ]);
     } finally {
       setLoading(false);
@@ -61,8 +72,8 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3rem)] max-w-3xl mx-auto">
-      <div className="mb-4 flex items-start justify-between">
+    <div className="flex flex-col h-full max-w-3xl mx-auto w-full min-h-0">
+      <div className="mb-4 flex items-start justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-white">AI Assistant</h1>
           <p className="text-gray-400 text-sm mt-1">Ask about your schedule, deadlines, or documents</p>
@@ -79,7 +90,7 @@ export default function Chat() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hidden scroll-smooth pb-4">
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
             <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
@@ -133,7 +144,7 @@ export default function Chat() {
 
       {/* Suggested questions */}
       {messages.length === 1 && (
-        <div className="py-3 flex flex-wrap gap-2">
+        <div className="py-3 flex flex-wrap gap-2 shrink-0">
           {SUGGESTED.map((q) => (
             <button
               key={q}
@@ -147,7 +158,7 @@ export default function Chat() {
       )}
 
       {/* Input */}
-      <div className="pt-3 border-t border-gray-800">
+      <div className="pt-3 border-t border-gray-800 shrink-0">
         <form
           onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
           className="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 focus-within:border-primary-500 transition-colors"

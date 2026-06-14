@@ -1,6 +1,8 @@
 import threading
 import time
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException as FastAPIHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import upload, schedule, deadlines, summarize, chat, alerts, auth_routes
 from app.services.alert_service import generate_alerts
@@ -12,12 +14,39 @@ app.add_middleware(
     allow_origins=[
         "https://main.d19691dovsr02k.amplifyapp.com",
         "http://localhost:5173",
-        "http://13.200.19.188:8000",  # Add this
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://13.200.19.188:8000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(FastAPIHTTPException)
+async def http_exception_handler(request: Request, exc: FastAPIHTTPException):
+    """Ensure CORS headers are present even on error responses (e.g. 401 Unauthorized).
+    Without this, the browser reports a 'CORS' error instead of the real auth error."""
+    origin = request.headers.get("origin", "")
+    allowed_origins = [
+        "https://main.d19691dovsr02k.amplifyapp.com",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://13.200.19.188:8000",
+    ]
+    headers = {"Content-Type": "application/json"}
+    if origin in allowed_origins:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=headers,
+    )
+
 
 app.include_router(upload.router)
 app.include_router(schedule.router)
