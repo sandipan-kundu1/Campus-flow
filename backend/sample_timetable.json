@@ -1,0 +1,14 @@
+{
+  "schedule": [
+    { "day": "Monday", "subject": "Data Structures", "time": "9:00 AM", "end_time": "10:00 AM", "room": "CS-101", "instructor": "Dr. Smith" },
+    { "day": "Monday", "subject": "Computer Networks", "time": "11:00 AM", "end_time": "12:00 PM", "room": "CS-102", "instructor": "Prof. Rao" },
+    { "day": "Tuesday", "subject": "Database Management", "time": "10:00 AM", "end_time": "11:00 AM", "room": "CS-103", "instructor": "Dr. Gupta" },
+    { "day": "Tuesday", "subject": "Operating Systems", "time": "2:00 PM", "end_time": "3:00 PM", "room": "CS-104", "instructor": "Prof. Kumar" },
+    { "day": "Wednesday", "subject": "Data Structures", "time": "9:00 AM", "end_time": "10:00 AM", "room": "CS-101", "instructor": "Dr. Smith" },
+    { "day": "Wednesday", "subject": "Software Engineering", "time": "11:00 AM", "end_time": "12:00 PM", "room": "CS-105", "instructor": "Dr. Patel" },
+    { "day": "Thursday", "subject": "Computer Networks", "time": "10:00 AM", "end_time": "11:00 AM", "room": "CS-102", "instructor": "Prof. Rao" },
+    { "day": "Thursday", "subject": "Database Management", "time": "2:00 PM", "end_time": "3:00 PM", "room": "CS-103", "instructor": "Dr. Gupta" },
+    { "day": "Friday", "subject": "Operating Systems", "time": "9:00 AM", "end_time": "10:00 AM", "room": "CS-104", "instructor": "Prof. Kumar" },
+    { "day": "Friday", "subject": "Software Engineering Lab", "time": "11:00 AM", "end_time": "1:00 PM", "room": "Lab-201", "instructor": "Dr. Patel" }
+  ]
+}
