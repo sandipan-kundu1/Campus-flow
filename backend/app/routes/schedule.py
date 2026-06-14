@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException
 from boto3.dynamodb.conditions import Attr
 from app.services import dynamodb_service
@@ -10,14 +11,19 @@ from app.schemas.schemas import ScheduleCreate, ScheduleUpdate
 router = APIRouter(prefix="/schedule", tags=["schedule"])
 
 DAYS_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+APP_TIMEZONE = ZoneInfo("Asia/Kolkata")
+
+
+def _now() -> datetime:
+    return datetime.now(APP_TIMEZONE)
 
 
 def _get_today_name() -> str:
-    return datetime.now().strftime("%A")
+    return _now().strftime("%A")
 
 
 def _get_current_time() -> str:
-    return datetime.now().strftime("%H:%M")
+    return _now().strftime("%H:%M")
 
 
 def _parse_time(time_str: str) -> int:
@@ -43,7 +49,7 @@ def _get_all_schedule(student_id: str) -> list[dict]:
 @router.get("/today")
 def get_today_schedule(student_id: str = Depends(get_current_user)):
     today = _get_today_name()
-    today_date_str = datetime.now().strftime("%Y-%m-%d")
+    today_date_str = _now().strftime("%Y-%m-%d")
     all_entries = _get_all_schedule(student_id)
     
     today_entries = []
@@ -77,7 +83,7 @@ def get_weekly_schedule(student_id: str = Depends(get_current_user)):
 
 @router.get("/upcoming")
 def get_upcoming_events(student_id: str = Depends(get_current_user)):
-    today_date_str = datetime.now().strftime("%Y-%m-%d")
+    today_date_str = _now().strftime("%Y-%m-%d")
     all_entries = _get_all_schedule(student_id)
     upcoming = [
         e for e in all_entries 
@@ -90,7 +96,7 @@ def get_upcoming_events(student_id: str = Depends(get_current_user)):
 @router.get("/next-class")
 def get_next_class(student_id: str = Depends(get_current_user)):
     today = _get_today_name()
-    today_date_str = datetime.now().strftime("%Y-%m-%d")
+    today_date_str = _now().strftime("%Y-%m-%d")
     current_minutes = _parse_time(_get_current_time())
     all_entries = _get_all_schedule(student_id)
 
@@ -114,7 +120,7 @@ def get_next_class(student_id: str = Depends(get_current_user)):
     # Check upcoming days this week
     today_idx = DAYS_ORDER.index(today) if today in DAYS_ORDER else 0
     for i in range(1, 7):
-        target_date = datetime.now() + timedelta(days=i)
+        target_date = _now() + timedelta(days=i)
         target_day = target_date.strftime("%A")
         target_date_str = target_date.strftime("%Y-%m-%d")
         
