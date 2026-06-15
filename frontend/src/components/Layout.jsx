@@ -32,7 +32,11 @@ export default function Layout({ children }) {
           </div>
         </header>
         <main className={`flex-1 p-6 flex flex-col min-h-0 ${isChat ? "overflow-hidden" : "overflow-y-auto"}`}>
-          {children}
+          {isChat ? children : (
+            <div className="w-full max-w-6xl mx-auto">
+              {children}
+            </div>
+          )}
         </main>
       </div>
       <ToastContainer limit={5} />

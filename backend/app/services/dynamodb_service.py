@@ -35,8 +35,15 @@ def scan_items(table_name: str, filter_expression=None):
     kwargs = {}
     if filter_expression:
         kwargs["FilterExpression"] = filter_expression
-    response = table.scan(**kwargs)
-    return response.get("Items", [])
+    items = []
+    while True:
+        response = table.scan(**kwargs)
+        items.extend(response.get("Items", []))
+        last_key = response.get("LastEvaluatedKey")
+        if not last_key:
+            break
+        kwargs["ExclusiveStartKey"] = last_key
+    return items
 
 def update_item(table_name: str, key: dict, update_expression: str, expression_values: dict, expression_names: dict = None):
     table = get_table(table_name)

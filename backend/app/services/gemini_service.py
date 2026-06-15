@@ -240,6 +240,15 @@ def answer_question(question: str, context: str, current_datetime: str = "", sch
         """
         import uuid
         from datetime import datetime
+        from boto3.dynamodb.conditions import Attr
+        # Prevent duplicates to stop infinite loop bugs
+        existing_items = dynamodb_service.scan_items(
+            settings.dynamodb_deadlines_table,
+            filter_expression=Attr("student_id").eq(student_id) & Attr("title").eq(title.strip()) & Attr("due_date").eq(due_date.strip())
+        )
+        if existing_items:
+            return f"A deadline '{title}' due on {due_date} already exists."
+
         item = {
             "id": str(uuid.uuid4()),
             "student_id": student_id,
