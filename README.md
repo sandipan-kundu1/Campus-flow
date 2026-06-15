@@ -2,7 +2,9 @@
 
 **AI-powered campus assistant — an operating system for student life.**
 
-Built for hackathons. Powered by Groq LLaMA 3.3, HuggingFace embeddings, ChromaDB, AWS DynamoDB & S3.
+🌐 **Live Demo (AWS Amplify):** [https://main.d19691dovsr02k.amplifyapp.com](https://main.d19691dovsr02k.amplifyapp.com)
+
+Built for hackathons. Powered by **Google Gemini API**, HuggingFace embeddings, ChromaDB, AWS DynamoDB & S3.
 
 ---
 
@@ -11,9 +13,10 @@ Built for hackathons. Powered by Groq LLaMA 3.3, HuggingFace embeddings, ChromaD
 | Feature | Description |
 |---|---|
 | **Routine Understanding** | Upload timetables (PDF/JSON), view today's/weekly schedule, see next class |
-| **Update Summarization** | Upload notices/circulars, auto-summarized by Groq AI |
+| **Update Summarization** | Upload notices/circulars, auto-summarized by AI |
 | **Smart Scheduling** | Add/manage deadlines (assignments, exams, projects), AI study plan |
-| **Instant Q&A** | RAG-powered chat — ask anything about your schedule, documents, or deadlines |
+| **Instant Q&A (General & Campus)** | Fast, ChatGPT-style interface. Ask anything — general knowledge or questions about your schedule, documents, and deadlines. |
+| **Duplicate Safeguards** | Built-in idempotency checks prevent duplicate deadlines and alerts. |
 
 ---
 
@@ -21,7 +24,7 @@ Built for hackathons. Powered by Groq LLaMA 3.3, HuggingFace embeddings, ChromaD
 
 **Frontend:** React + Vite + Tailwind CSS + React Router + Axios  
 **Backend:** FastAPI + Python 3.11 + Uvicorn  
-**AI:** Groq API (`llama-3.3-70b-versatile`) + HuggingFace `sentence-transformers/all-MiniLM-L6-v2`  
+**AI:** Google Gemini (`gemini-2.5-flash-lite`) + HuggingFace `sentence-transformers/all-MiniLM-L6-v2`  
 **Storage:** AWS DynamoDB + AWS S3  
 **Vector DB:** ChromaDB (local persistent)
 
@@ -40,7 +43,7 @@ Campus-flow/
 │   │   │   ├── deadlines.py     # CRUD /deadlines
 │   │   │   └── summarize.py     # GET /summaries, POST /summarize, POST /schedule/suggestions
 │   │   ├── services/
-│   │   │   ├── groq_service.py       # Groq LLM calls
+│   │   │   ├── gemini_service.py     # Gemini LLM integrations & function calling
 │   │   │   ├── rag_service.py        # ChromaDB vector store
 │   │   │   ├── embedding_service.py  # HuggingFace embeddings
 │   │   │   ├── s3_service.py         # AWS S3 operations
@@ -57,7 +60,7 @@ Campus-flow/
 │   ├── src/
 │   │   ├── api/client.js        # Axios API client
 │   │   ├── components/
-│   │   │   ├── Layout.jsx
+│   │   │   ├── Layout.jsx       # Global responsive layout & page centering
 │   │   │   ├── Sidebar.jsx
 │   │   │   ├── Card.jsx
 │   │   │   └── Badge.jsx
@@ -66,7 +69,7 @@ Campus-flow/
 │   │       ├── Timetable.jsx
 │   │       ├── Documents.jsx
 │   │       ├── Deadlines.jsx
-│   │       └── Chat.jsx
+│   │       └── Chat.jsx         # Full-height, custom-scrollbar chat UI
 │   ├── .env.example
 │   └── tailwind.config.js
 └── README.md
@@ -80,7 +83,7 @@ Campus-flow/
 - Python 3.11+
 - Node.js 18+
 - AWS account with DynamoDB and S3 access
-- Groq API key (free at [console.groq.com](https://console.groq.com))
+- Gemini API key (free at [aistudio.google.com](https://aistudio.google.com))
 
 ---
 
@@ -107,7 +110,7 @@ cp .env.example .env
 
 **Edit `backend/.env`:**
 ```env
-GROQ_API_KEY=gsk_your_groq_key_here
+GEMINI_API_KEY=your_gemini_key_here
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_REGION=ap-south-1
@@ -126,7 +129,7 @@ python setup_dynamodb.py
 
 **Start backend:**
 ```bash
-python main.py
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # API runs at http://localhost:8000
 # Docs at http://localhost:8000/docs
 ```
@@ -187,6 +190,22 @@ For production deployments, set `VITE_API_URL` to your public backend URL or pro
 
 ---
 
+## Deployment Recommendations (Vercel vs EC2)
+
+**We strongly recommend hosting the backend on AWS EC2 or a persistent VM provider (like Railway/Render Standard).**
+
+Serverless platforms like **Vercel** are *not* recommended for this backend because:
+1. **ChromaDB** writes vector indexes to the local filesystem (`./chroma_db`). Vercel's ephemeral disk wipes this on every request.
+2. The combination of `torch`, `chromadb`, and `sentence-transformers` uses ~1.5GB RAM, far exceeding Vercel's 250MB size limit.
+3. The background alert scheduler requires a long-running persistent thread, which serverless functions do not support.
+
+**Deploying to EC2:**
+1. Provision an Ubuntu EC2 instance.
+2. Clone the repo and set up the `venv`.
+3. Use `screen` or `tmux` to run the Uvicorn server, or set up a `systemd` service for persistence.
+
+---
+
 ## API Reference
 
 | Method | Endpoint | Description |
@@ -219,7 +238,7 @@ Go to **AI Chat** and try:
 - "What classes do I have today?"
 - "What is my next class?"
 - "When is my next deadline?"
-- "Summarize the uploaded notices"
+- "Who is the Prime Minister of India?" (General AI knowledge)
 
 ### Add Deadlines
 Go to **Deadlines** → Click **Add Deadline** → Fill in details → Click **Study Plan** for AI suggestions
