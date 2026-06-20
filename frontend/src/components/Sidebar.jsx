@@ -8,6 +8,7 @@ import {
   MessageSquare,
   GraduationCap,
   LogOut,
+  X
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -20,16 +21,30 @@ const links = [
   { to: "/chat", label: "AI Chat", icon: MessageSquare },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const { user, logout } = useAuth();
 
+  const handleLinkClick = () => {
+    if (onClose) onClose();
+  };
+
   return (
-    <aside className="w-60 h-full bg-gray-900 border-r border-gray-800 flex flex-col shrink-0">
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-gray-800 shrink-0">
-        <GraduationCap className="text-accent-500" size={28} />
-        <span className="text-xl font-bold text-white">
-          Campus<span className="text-accent-500">Flow</span>
-        </span>
+    <aside className="w-64 sm:w-60 h-full bg-gray-900 border-r border-gray-800 flex flex-col shrink-0 shadow-xl md:shadow-none relative z-50">
+      <div className="flex items-center justify-between px-5 py-5 border-b border-gray-800 shrink-0">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="text-accent-500" size={28} />
+          <span className="text-xl font-bold text-white">
+            Campus<span className="text-accent-500">Flow</span>
+          </span>
+        </div>
+        {onClose && (
+          <button 
+            className="md:hidden text-gray-400 hover:text-white"
+            onClick={onClose}
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
       <nav className="flex-1 py-4 px-3 flex flex-col gap-1 overflow-y-auto scrollbar-thin">
         {links.map(({ to, label, icon: Icon }) => (
@@ -37,6 +52,7 @@ export default function Sidebar() {
             key={to}
             to={to}
             end={to === "/"}
+            onClick={handleLinkClick}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -66,7 +82,10 @@ export default function Sidebar() {
             </div>
           </div>
           <button
-            onClick={logout}
+            onClick={() => {
+              handleLinkClick();
+              logout();
+            }}
             className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300 font-medium transition-colors"
           >
             <LogOut size={13} />
